@@ -9,17 +9,23 @@ import com.gpmall.order.biz.factory.OrderProcessPipelineFactory;
 import com.gpmall.order.constant.OrderRetCode;
 import com.gpmall.order.constants.OrderConstants;
 import com.gpmall.order.dal.entitys.Order;
+import com.gpmall.order.dal.entitys.OrderExample;
 import com.gpmall.order.dal.persistence.OrderItemMapper;
 import com.gpmall.order.dal.persistence.OrderMapper;
 import com.gpmall.order.dal.persistence.OrderShippingMapper;
 import com.gpmall.order.dto.*;
 import com.gpmall.order.utils.ExceptionProcessorUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 腾讯课堂搜索【咕泡学院】
@@ -115,5 +121,38 @@ public class OrderCoreServiceImpl implements OrderCoreService{
         orderMapper.deleteByPrimaryKey(request.getOrderId());
         orderItemMapper.deleteItemByOrderId(request.getOrderId());
         orderShippingMapper.deleteByPrimaryKey(request.getOrderId());
+    }
+
+    /**
+     * @Description: first 创建时间早于当前时间的过去两小时，即判定为超时未支付，关闭订单
+     * @Author: Douglas Lai(990593218)
+     * @Date: 2019/08/15
+     */
+    @Override
+    public void closeOrder(){
+        OrderExample example = new OrderExample();
+        //LocalDateTime转Date
+        LocalDateTime localDateTime = LocalDateTime.now();
+        // TODO 后面需要改成nacos配置中心取值
+        Instant instant = localDateTime.minusHours(2L).atZone(ZoneId.systemDefault()).toInstant();
+        Date date = Date.from(instant);
+        example.createCriteria()
+                .andCreateTimeLessThan(date)
+                .andStatusEqualTo(OrderConstants.ORDER_STATUS_INIT)
+                .andPaymentTimeIsNull();
+
+        example.setOrderByClause("create_time desc");
+        List<Order> orderList = orderMapper.selectByExample(example);
+        if(CollectionUtils.isEmpty(orderList)){
+            // TODO
+            log.info("没有超时订单需要处理...");
+        }
+
+        orderList.forEach(order -> {
+            order.setStatus(OrderConstants.ORDER_STATUS_TRANSACTION_CLOSE);
+            order.setCloseTime(new Date());
+            int num=orderMapper.updateByPrimaryKey(order);
+            log.info("closeOrder,effect Row:"+num);
+        });
     }
 }

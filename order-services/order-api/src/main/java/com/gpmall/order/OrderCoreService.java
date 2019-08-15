@@ -35,6 +35,12 @@ public interface OrderCoreService {
      */
     DeleteOrderResponse deleteOrder(DeleteOrderRequest request);
 
+    /**
+     * 关闭订单
+     * @author 990593218
+     * @return
+     */
+    void closeOrder();
 
 
 }
