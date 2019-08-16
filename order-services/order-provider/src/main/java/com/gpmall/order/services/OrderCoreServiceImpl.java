@@ -146,6 +146,7 @@ public class OrderCoreServiceImpl implements OrderCoreService{
         if(CollectionUtils.isEmpty(orderList)){
             // TODO
             log.info("没有超时订单需要处理...");
+            return;
         }
 
         orderList.forEach(order -> {
