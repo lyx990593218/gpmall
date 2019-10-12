@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50722
 File Encoding         : 65001
 
-Date: 2019-08-12 15:35:01
+Date: 2019-09-02 19:54:05
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -301,7 +301,7 @@ CREATE TABLE `tb_order` (
   `payment` decimal(10,2) DEFAULT NULL COMMENT '实付金额',
   `payment_type` int(1) DEFAULT NULL COMMENT '支付类型 1在线支付 2货到付款',
   `post_fee` decimal(10,2) DEFAULT NULL COMMENT '邮费',
-  `status` int(1) DEFAULT NULL COMMENT '状态 0未付款 1已付款 2未发货 3已发货 4交易成功 5交易关闭 6交易失败',
+  `status` int(1) DEFAULT NULL COMMENT '状态 0未付款 1已付款 2未发货 3已发货 4交易成功 5交易关闭 6交易失败 7-已退款',
   `create_time` datetime DEFAULT NULL COMMENT '订单创建时间',
   `update_time` datetime DEFAULT NULL COMMENT '订单更新时间',
   `payment_time` datetime DEFAULT NULL COMMENT '付款时间',
@@ -325,6 +325,7 @@ CREATE TABLE `tb_order` (
 -- ----------------------------
 -- Records of tb_order
 -- ----------------------------
+INSERT INTO `tb_order` VALUES ('19081913521928018', '1998.00', null, null, '0', '2019-08-19 05:52:19', '2019-08-19 05:52:19', null, null, null, null, null, null, '62', null, 'test', null, null);
 
 -- ----------------------------
 -- Table structure for tb_order_item
@@ -332,7 +333,7 @@ CREATE TABLE `tb_order` (
 DROP TABLE IF EXISTS `tb_order_item`;
 CREATE TABLE `tb_order_item` (
   `id` varchar(50) COLLATE utf8_bin NOT NULL,
-  `item_id` varchar(50) COLLATE utf8_bin NOT NULL COMMENT '商品id',
+  `item_id` bigint(20) COLLATE utf8_bin NOT NULL COMMENT '商品id',
   `order_id` varchar(50) COLLATE utf8_bin NOT NULL COMMENT '订单id',
   `num` int(10) DEFAULT NULL COMMENT '商品购买数量',
   `title` varchar(200) COLLATE utf8_bin DEFAULT NULL COMMENT '商品标题',
@@ -343,10 +344,15 @@ CREATE TABLE `tb_order_item` (
   KEY `item_id` (`item_id`),
   KEY `order_id` (`order_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
+alter table tb_order_item add column  `status` int(4) DEFAULT NULL COMMENT '1库存已锁定 2库存已释放 3-库存减扣成功';
+alter  table tb_order_item add column `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间';
+alter  table tb_order_item add column `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+alter  table tb_order_item add UNIQUE KEY `oder_item_id` (`order_id`,`item_id`) USING BTREE COMMENT '订单商品唯一索引';
 -- ----------------------------
+
 -- Records of tb_order_item
 -- ----------------------------
+INSERT INTO `tb_order_item` VALUES ('19081913521949774', '100053202', '19081913521928018', '2', '地平线 8 号商务旅行箱', '999.00', '1998.00', 'https://resource.smartisan.com/resource/d1dcca9144e8d13ffb33026148599d0a.png');
 
 -- ----------------------------
 -- Table structure for tb_order_shipping
@@ -370,6 +376,7 @@ CREATE TABLE `tb_order_shipping` (
 -- ----------------------------
 -- Records of tb_order_shipping
 -- ----------------------------
+INSERT INTO `tb_order_shipping` VALUES ('19081913521928018', 'Mic', '18073804421', null, null, null, null, '湖南省长沙市麓谷企业广场A3栋3单元407', null, '2019-08-19 05:52:20', '2019-08-19 05:52:20');
 
 -- ----------------------------
 -- Table structure for tb_panel
@@ -471,11 +478,12 @@ INSERT INTO `tb_panel_content` VALUES ('61', '0', '0', null, '5', '', '服务', 
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_payment`;
 CREATE TABLE `tb_payment` (
-  `id` varchar(50) NOT NULL AUTO_INCREMENT ,
+  `id` varchar(50) NOT NULL,
   `status` varchar(20) NOT NULL COMMENT '支付状态',
   `order_id` varchar(50) NOT NULL COMMENT '订单id',
   `product_name` varchar(80) DEFAULT NULL COMMENT '产品名称',
-  `pay_no` varchar(80) DEFAULT NULL COMMENT '支付流水号',
+  `pay_no` varchar(80) DEFAULT NULL COMMENT '第三方返回单号',
+  `trade_no` varchar(80) DEFAULT NULL COMMENT '支付流水号',
   `payer_uid` int(20) NOT NULL COMMENT '付款人id',
   `payer_name` varchar(50) DEFAULT NULL COMMENT '付款人姓名',
   `payer_amount` decimal(10,2) NOT NULL COMMENT '付款方支付金额',
@@ -492,312 +500,106 @@ CREATE TABLE `tb_payment` (
 -- ----------------------------
 -- Records of tb_payment
 -- ----------------------------
-INSERT INTO `tb_payment` VALUES ('77451a4f-9283-47a7-9e65-715d361fdbe1', '1', '19081121113751649', 'Smartisan 原装快充充电器 18W', null, '62', '', '1.00', '1.00', 'alipay', null, null, '', '2019-08-11 08:11:41', '2019-08-11 08:11:41');
-INSERT INTO `tb_payment` VALUES ('e403ba34-e492-4ac8-8c2f-32a72d3002e1', '1', '19081018205253962', '坚果 R1', null, '62', '', '1.00', '1.00', 'alipay', null, null, '', '2019-08-10 05:21:29', '2019-08-10 05:21:29');
 
 -- ----------------------------
--- Table structure for tb_permission
+-- Table structure for tb_refund
 -- ----------------------------
-DROP TABLE IF EXISTS `tb_permission`;
-CREATE TABLE `tb_permission` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) DEFAULT NULL,
-  `permission` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of tb_permission
--- ----------------------------
-INSERT INTO `tb_permission` VALUES ('17', '添加栏目内容', '/content/add');
-INSERT INTO `tb_permission` VALUES ('18', '删除栏目内容', '/content/del/*');
-INSERT INTO `tb_permission` VALUES ('19', '编辑栏目内容', '/content/update');
-INSERT INTO `tb_permission` VALUES ('20', 'webupload图片上传', '/image/imageUpload');
-INSERT INTO `tb_permission` VALUES ('21', 'kindeditor图片上传', '/kindeditor/imageUpload');
-INSERT INTO `tb_permission` VALUES ('23', '商品分类编辑', '/item/cat/update');
-INSERT INTO `tb_permission` VALUES ('24', '商品分类添加', '/item/cat/add');
-INSERT INTO `tb_permission` VALUES ('25', '商品分类删除', '/item/cat/del/*');
-INSERT INTO `tb_permission` VALUES ('27', '商品添加', '/item/add');
-INSERT INTO `tb_permission` VALUES ('28', '商品删除', '/item/del/*');
-INSERT INTO `tb_permission` VALUES ('29', '启用商品', '/item/start/*');
-INSERT INTO `tb_permission` VALUES ('30', '停用商品', '/item/stop/*');
-INSERT INTO `tb_permission` VALUES ('31', '编辑商品', '/item/update/*');
-INSERT INTO `tb_permission` VALUES ('33', '会员添加', '/member/add');
-INSERT INTO `tb_permission` VALUES ('34', '修改会员密码', '/member/changePass/*');
-INSERT INTO `tb_permission` VALUES ('35', '会员删除', '/member/del/*');
-INSERT INTO `tb_permission` VALUES ('36', '会员移除', '/member/remove/*');
-INSERT INTO `tb_permission` VALUES ('37', '会员启用', '/member/start/*');
-INSERT INTO `tb_permission` VALUES ('38', '会员停用', '/member/stop/*');
-INSERT INTO `tb_permission` VALUES ('39', '会员编辑', '/member/update/*');
-INSERT INTO `tb_permission` VALUES ('40', '权限添加', '/user/addPermission');
-INSERT INTO `tb_permission` VALUES ('41', '角色添加', '/user/addRole');
-INSERT INTO `tb_permission` VALUES ('42', '用户添加', '/user/addUser');
-INSERT INTO `tb_permission` VALUES ('43', '修改用户密码', '/user/changePass');
-INSERT INTO `tb_permission` VALUES ('44', '删除权限', '/user/delPermission/*');
-INSERT INTO `tb_permission` VALUES ('45', '删除角色', '/user/delRole/*');
-INSERT INTO `tb_permission` VALUES ('46', '删除用户', '/user/delUser/*');
-INSERT INTO `tb_permission` VALUES ('47', '用户启用', '/user/start/*');
-INSERT INTO `tb_permission` VALUES ('48', '用户停用', '/user/stop/*');
-INSERT INTO `tb_permission` VALUES ('49', '编辑权限', '/user/updatePermission');
-INSERT INTO `tb_permission` VALUES ('50', '编辑角色', '/user/updateRole');
-INSERT INTO `tb_permission` VALUES ('51', '编辑用户', '/user/updateUser');
-INSERT INTO `tb_permission` VALUES ('52', '编辑系统基本配置', '/sys/base/update');
-INSERT INTO `tb_permission` VALUES ('53', '删除系统日志', '/sys/log/del/*');
-INSERT INTO `tb_permission` VALUES ('54', '添加shiro配置', '/sys/shiro/add');
-INSERT INTO `tb_permission` VALUES ('55', '删除shiro配置', '/sys/shiro/del/*');
-INSERT INTO `tb_permission` VALUES ('56', '编辑shiro配置', '/sys/shiro/update');
-INSERT INTO `tb_permission` VALUES ('57', '删除订单', '/order/del/*');
-INSERT INTO `tb_permission` VALUES ('58', '添加捐赠', '/thanks/add');
-INSERT INTO `tb_permission` VALUES ('59', '删除捐赠', '/thanks/del/*');
-INSERT INTO `tb_permission` VALUES ('60', '编辑捐赠', '/thanks/update');
-INSERT INTO `tb_permission` VALUES ('61', '添加板块', '/panel/add');
-INSERT INTO `tb_permission` VALUES ('62', '删除版块', '/panel/del/*');
-INSERT INTO `tb_permission` VALUES ('63', '更新板块', '/panel/update');
-INSERT INTO `tb_permission` VALUES ('64', '更新首页缓存', '/redis/index/update');
-INSERT INTO `tb_permission` VALUES ('65', '更新推荐板块缓存', '/redis/recommend/update');
-INSERT INTO `tb_permission` VALUES ('66', '更新捐赠板块缓存', '/redis/thank/update');
-INSERT INTO `tb_permission` VALUES ('67', '同步索引', '/item/importIndex');
-INSERT INTO `tb_permission` VALUES ('69', '订单备注', '/order/remark');
-INSERT INTO `tb_permission` VALUES ('70', '订单发货', '/order/deliver');
-INSERT INTO `tb_permission` VALUES ('71', '取消订单', '/order/cancel/*');
-INSERT INTO `tb_permission` VALUES ('72', '快递添加', '/express/add');
-INSERT INTO `tb_permission` VALUES ('73', '快递编辑', '/express/update');
-INSERT INTO `tb_permission` VALUES ('74', '快递删除', '/express/del/*');
-INSERT INTO `tb_permission` VALUES ('75', '词典添加', '/dict/add');
-INSERT INTO `tb_permission` VALUES ('76', '词典编辑', '/dict/update');
-INSERT INTO `tb_permission` VALUES ('77', '词典删除', '/dict/del/*');
-INSERT INTO `tb_permission` VALUES ('78', '捐赠管理页面', '/thanks-list');
-
--- ----------------------------
--- Table structure for tb_role
--- ----------------------------
-DROP TABLE IF EXISTS `tb_role`;
-CREATE TABLE `tb_role` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) DEFAULT NULL,
-  `description` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of tb_role
--- ----------------------------
-INSERT INTO `tb_role` VALUES ('1', '超级管理员', '拥有至高无上的权力');
-INSERT INTO `tb_role` VALUES ('2', '游客', '只是个过客');
-
--- ----------------------------
--- Table structure for tb_role_perm
--- ----------------------------
-DROP TABLE IF EXISTS `tb_role_perm`;
-CREATE TABLE `tb_role_perm` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `role_id` int(11) DEFAULT NULL,
-  `permission_id` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=304 DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of tb_role_perm
--- ----------------------------
-INSERT INTO `tb_role_perm` VALUES ('246', '1', '17');
-INSERT INTO `tb_role_perm` VALUES ('247', '1', '18');
-INSERT INTO `tb_role_perm` VALUES ('248', '1', '19');
-INSERT INTO `tb_role_perm` VALUES ('249', '1', '20');
-INSERT INTO `tb_role_perm` VALUES ('250', '1', '21');
-INSERT INTO `tb_role_perm` VALUES ('251', '1', '23');
-INSERT INTO `tb_role_perm` VALUES ('252', '1', '24');
-INSERT INTO `tb_role_perm` VALUES ('253', '1', '25');
-INSERT INTO `tb_role_perm` VALUES ('254', '1', '27');
-INSERT INTO `tb_role_perm` VALUES ('255', '1', '28');
-INSERT INTO `tb_role_perm` VALUES ('256', '1', '29');
-INSERT INTO `tb_role_perm` VALUES ('257', '1', '30');
-INSERT INTO `tb_role_perm` VALUES ('258', '1', '31');
-INSERT INTO `tb_role_perm` VALUES ('259', '1', '33');
-INSERT INTO `tb_role_perm` VALUES ('260', '1', '34');
-INSERT INTO `tb_role_perm` VALUES ('261', '1', '35');
-INSERT INTO `tb_role_perm` VALUES ('262', '1', '36');
-INSERT INTO `tb_role_perm` VALUES ('263', '1', '37');
-INSERT INTO `tb_role_perm` VALUES ('264', '1', '38');
-INSERT INTO `tb_role_perm` VALUES ('265', '1', '39');
-INSERT INTO `tb_role_perm` VALUES ('266', '1', '40');
-INSERT INTO `tb_role_perm` VALUES ('267', '1', '41');
-INSERT INTO `tb_role_perm` VALUES ('268', '1', '42');
-INSERT INTO `tb_role_perm` VALUES ('269', '1', '43');
-INSERT INTO `tb_role_perm` VALUES ('270', '1', '44');
-INSERT INTO `tb_role_perm` VALUES ('271', '1', '45');
-INSERT INTO `tb_role_perm` VALUES ('272', '1', '46');
-INSERT INTO `tb_role_perm` VALUES ('273', '1', '47');
-INSERT INTO `tb_role_perm` VALUES ('274', '1', '48');
-INSERT INTO `tb_role_perm` VALUES ('275', '1', '49');
-INSERT INTO `tb_role_perm` VALUES ('276', '1', '50');
-INSERT INTO `tb_role_perm` VALUES ('277', '1', '51');
-INSERT INTO `tb_role_perm` VALUES ('278', '1', '52');
-INSERT INTO `tb_role_perm` VALUES ('279', '1', '53');
-INSERT INTO `tb_role_perm` VALUES ('280', '1', '54');
-INSERT INTO `tb_role_perm` VALUES ('281', '1', '55');
-INSERT INTO `tb_role_perm` VALUES ('282', '1', '56');
-INSERT INTO `tb_role_perm` VALUES ('283', '1', '57');
-INSERT INTO `tb_role_perm` VALUES ('284', '1', '58');
-INSERT INTO `tb_role_perm` VALUES ('285', '1', '59');
-INSERT INTO `tb_role_perm` VALUES ('286', '1', '60');
-INSERT INTO `tb_role_perm` VALUES ('287', '1', '61');
-INSERT INTO `tb_role_perm` VALUES ('288', '1', '62');
-INSERT INTO `tb_role_perm` VALUES ('289', '1', '63');
-INSERT INTO `tb_role_perm` VALUES ('290', '1', '64');
-INSERT INTO `tb_role_perm` VALUES ('291', '1', '65');
-INSERT INTO `tb_role_perm` VALUES ('292', '1', '66');
-INSERT INTO `tb_role_perm` VALUES ('293', '1', '67');
-INSERT INTO `tb_role_perm` VALUES ('294', '1', '69');
-INSERT INTO `tb_role_perm` VALUES ('295', '1', '70');
-INSERT INTO `tb_role_perm` VALUES ('296', '1', '71');
-INSERT INTO `tb_role_perm` VALUES ('297', '1', '72');
-INSERT INTO `tb_role_perm` VALUES ('298', '1', '73');
-INSERT INTO `tb_role_perm` VALUES ('299', '1', '74');
-INSERT INTO `tb_role_perm` VALUES ('300', '1', '75');
-INSERT INTO `tb_role_perm` VALUES ('301', '1', '76');
-INSERT INTO `tb_role_perm` VALUES ('302', '1', '77');
-INSERT INTO `tb_role_perm` VALUES ('303', '1', '78');
-
--- ----------------------------
--- Table structure for tb_shiro_filter
--- ----------------------------
-DROP TABLE IF EXISTS `tb_shiro_filter`;
-CREATE TABLE `tb_shiro_filter` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) DEFAULT NULL,
-  `perms` varchar(255) DEFAULT NULL,
-  `sort_order` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=86 DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of tb_shiro_filter
--- ----------------------------
-INSERT INTO `tb_shiro_filter` VALUES ('1', '/login', 'anon', '1');
-INSERT INTO `tb_shiro_filter` VALUES ('2', '/403', 'anon', '2');
-INSERT INTO `tb_shiro_filter` VALUES ('3', '/', 'authc', '3');
-INSERT INTO `tb_shiro_filter` VALUES ('7', '/index', 'authc', '4');
-INSERT INTO `tb_shiro_filter` VALUES ('8', '/welcome', 'authc', '5');
-INSERT INTO `tb_shiro_filter` VALUES ('9', '/thanks-pic', 'authc', '6');
-INSERT INTO `tb_shiro_filter` VALUES ('10', '/lock-screen', 'authc', '7');
-INSERT INTO `tb_shiro_filter` VALUES ('11', '/user/logout', 'authc', '8');
-INSERT INTO `tb_shiro_filter` VALUES ('12', '/user/userInfo', 'authc', '9');
-INSERT INTO `tb_shiro_filter` VALUES ('17', '/content/cat/add', 'perms[/content/cat/add]', '10');
-INSERT INTO `tb_shiro_filter` VALUES ('18', '/content/cat/del/*', 'perms[/content/cat/del/*]', '11');
-INSERT INTO `tb_shiro_filter` VALUES ('19', '/content/cat/update', 'perms[/content/cat/update]', '12');
-INSERT INTO `tb_shiro_filter` VALUES ('21', '/content/add', 'perms[/content/add]', '13');
-INSERT INTO `tb_shiro_filter` VALUES ('22', '/content/del/*', 'perms[/content/del/*]', '14');
-INSERT INTO `tb_shiro_filter` VALUES ('23', '/content/update', 'perms[/content/update]', '15');
-INSERT INTO `tb_shiro_filter` VALUES ('24', '/image/imageUpload', 'perms[/image/imageUpload]', '16');
-INSERT INTO `tb_shiro_filter` VALUES ('25', '/image/update', 'perms[/image/update]', '18');
-INSERT INTO `tb_shiro_filter` VALUES ('26', '/kindeditor/imageUpload', 'perms[/kindeditor/imageUpload]', '17');
-INSERT INTO `tb_shiro_filter` VALUES ('27', '/item/cat/add', 'perms[/item/cat/add]', '19');
-INSERT INTO `tb_shiro_filter` VALUES ('28', '/item/cat/del/*', 'perms[/item/cat/del/*]', '20');
-INSERT INTO `tb_shiro_filter` VALUES ('29', '/item/cat/update', 'perms[/item/cat/update]', '21');
-INSERT INTO `tb_shiro_filter` VALUES ('30', '/item/add', 'perms[/item/add]', '22');
-INSERT INTO `tb_shiro_filter` VALUES ('31', '/item/del/*', 'perms[/item/del/*]', '23');
-INSERT INTO `tb_shiro_filter` VALUES ('32', '/item/start/*', 'perms[/item/start/*]', '24');
-INSERT INTO `tb_shiro_filter` VALUES ('33', '/item/stop/*', 'perms[/item/stop/*]', '25');
-INSERT INTO `tb_shiro_filter` VALUES ('34', '/item/update/*', 'perms[/item/update/*]', '26');
-INSERT INTO `tb_shiro_filter` VALUES ('36', '/member/add', 'perms[/member/add]', '28');
-INSERT INTO `tb_shiro_filter` VALUES ('37', '/member/changePass/*', 'perms[/member/changePass/*]', '29');
-INSERT INTO `tb_shiro_filter` VALUES ('38', '/member/del/*', 'perms[/member/del/*]', '30');
-INSERT INTO `tb_shiro_filter` VALUES ('39', '/member/remove/*', 'perms[/member/remove/*]', '31');
-INSERT INTO `tb_shiro_filter` VALUES ('40', '/member/start/*', 'perms[/member/start/*]', '32');
-INSERT INTO `tb_shiro_filter` VALUES ('41', '/member/stop/*', 'perms[/member/stop/*]', '33');
-INSERT INTO `tb_shiro_filter` VALUES ('42', '/member/update/*', 'perms[/member/update/*]', '34');
-INSERT INTO `tb_shiro_filter` VALUES ('43', '/user/addPermission', 'perms[/user/addPermission]', '35');
-INSERT INTO `tb_shiro_filter` VALUES ('44', '/user/addRole', 'perms[/user/addRole]', '36');
-INSERT INTO `tb_shiro_filter` VALUES ('45', '/user/addUser', 'perms[/user/addUser]', '37');
-INSERT INTO `tb_shiro_filter` VALUES ('46', '/user/changePass', 'perms[/user/changePass]', '38');
-INSERT INTO `tb_shiro_filter` VALUES ('47', '/user/delPermission/*', 'perms[/user/delPermission/*]', '39');
-INSERT INTO `tb_shiro_filter` VALUES ('48', '/user/delRole/*', 'perms[/user/delRole/*]', '40');
-INSERT INTO `tb_shiro_filter` VALUES ('49', '/user/delUser/*', 'perms[/user/delUser/*]', '41');
-INSERT INTO `tb_shiro_filter` VALUES ('50', '/user/start/*', 'perms[/user/start/*]', '42');
-INSERT INTO `tb_shiro_filter` VALUES ('51', '/user/stop/*', 'perms[/user/stop/*]', '43');
-INSERT INTO `tb_shiro_filter` VALUES ('52', '/user/updatePermission', 'perms[/user/updatePermission]', '44');
-INSERT INTO `tb_shiro_filter` VALUES ('53', '/user/updateRole', 'perms[/user/updateRole]', '45');
-INSERT INTO `tb_shiro_filter` VALUES ('54', '/user/updateUser', 'perms[/user/updateUser]', '46');
-INSERT INTO `tb_shiro_filter` VALUES ('55', '/sys/base/update', 'perms[/sys/base/update]', '47');
-INSERT INTO `tb_shiro_filter` VALUES ('56', '/sys/log/del/*', 'perms[/sys/log/del/*]', '48');
-INSERT INTO `tb_shiro_filter` VALUES ('57', '/sys/shiro/add', 'perms[/sys/shiro/add]', '49');
-INSERT INTO `tb_shiro_filter` VALUES ('58', '/sys/shiro/del/*', 'perms[/sys/shiro/del/*]', '50');
-INSERT INTO `tb_shiro_filter` VALUES ('59', '/sys/shiro/update', 'perms[/sys/shiro/update]', '51');
-INSERT INTO `tb_shiro_filter` VALUES ('60', '/order/del/*', 'perms[/order/del/*]', '52');
-INSERT INTO `tb_shiro_filter` VALUES ('61', '/thanks/add', 'perms[/thanks/add]', '53');
-INSERT INTO `tb_shiro_filter` VALUES ('62', '/thanks/del/*', 'perms[/thanks/del/*]', '54');
-INSERT INTO `tb_shiro_filter` VALUES ('63', '/thanks/update', 'perms[/thanks/update]', '55');
-INSERT INTO `tb_shiro_filter` VALUES ('66', '/*', 'authc', '9');
-INSERT INTO `tb_shiro_filter` VALUES ('67', '/geetestInit', 'anon', '3');
-INSERT INTO `tb_shiro_filter` VALUES ('68', '/pay-edit', 'anon', '3');
-INSERT INTO `tb_shiro_filter` VALUES ('69', '/panel/add', 'perms[/panel/add]', '56');
-INSERT INTO `tb_shiro_filter` VALUES ('70', '/panel/del/*', 'perms[/panel/del/*]', '57');
-INSERT INTO `tb_shiro_filter` VALUES ('71', '/panel/update', 'perms[/panel/update]', '58');
-INSERT INTO `tb_shiro_filter` VALUES ('72', '/redis/index/update', 'perms[/redis/index/update]', '59');
-INSERT INTO `tb_shiro_filter` VALUES ('73', '/redis/recommend/update', 'perms[/redis/recommend/update]', '60');
-INSERT INTO `tb_shiro_filter` VALUES ('74', '/redis/thank/update', 'perms[/redis/thank/update]', '61');
-INSERT INTO `tb_shiro_filter` VALUES ('75', '/item/importIndex', 'perms[/item/importIndex]', '62');
-INSERT INTO `tb_shiro_filter` VALUES ('76', '/order/remark', 'perms[/order/remark]', '63');
-INSERT INTO `tb_shiro_filter` VALUES ('77', '/order/deliver', 'perms[/order/deliver]', '64');
-INSERT INTO `tb_shiro_filter` VALUES ('78', '/order/cancel/*', 'perms[/order/cancel/*]', '65');
-INSERT INTO `tb_shiro_filter` VALUES ('79', '/express/add', 'perms[/express/add]', '66');
-INSERT INTO `tb_shiro_filter` VALUES ('80', '/express/update', 'perms[/express/update]', '67');
-INSERT INTO `tb_shiro_filter` VALUES ('81', '/express/del/*', 'perms[/express/del/*]', '68');
-INSERT INTO `tb_shiro_filter` VALUES ('82', '/dict/add', 'perms[/dict/add]', '69');
-INSERT INTO `tb_shiro_filter` VALUES ('83', '/dict/update', 'perms[/dict/update]', '70');
-INSERT INTO `tb_shiro_filter` VALUES ('84', '/dict/del/*', 'perms[/dict/del/*]', '71');
-INSERT INTO `tb_shiro_filter` VALUES ('85', '/thanks-list', 'perms[/thanks-list]', '72');
-
--- ----------------------------
--- Table structure for tb_thanks
--- ----------------------------
-DROP TABLE IF EXISTS `tb_thanks`;
-CREATE TABLE `tb_thanks` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `nick_name` varchar(255) DEFAULT NULL,
-  `username` varchar(255) DEFAULT NULL,
-  `money` decimal(10,2) DEFAULT NULL,
-  `info` varchar(255) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL COMMENT '通知邮箱',
-  `state` int(11) DEFAULT '0' COMMENT '状态 0待审核 1确认显示  2驳回 3通过不展示',
-  `pay_type` varchar(255) DEFAULT NULL COMMENT '支付方式',
-  `order_id` varchar(255) DEFAULT NULL COMMENT '关联订单id',
-  `date` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of tb_thanks
--- ----------------------------
-INSERT INTO `tb_thanks` VALUES ('6', '小黄鱼', '18782059038@163.com', '1.00', '无', null, '1', 'Alipay', null, '2018-03-30 19:03:07');
-
--- ----------------------------
--- Table structure for tb_user
--- ----------------------------
-DROP TABLE IF EXISTS `tb_user`;
-CREATE TABLE `tb_user` (
+DROP TABLE IF EXISTS `tb_refund`;
+CREATE TABLE `tb_refund` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `username` varchar(50) NOT NULL COMMENT '用户名',
-  `password` varchar(32) NOT NULL COMMENT '密码 md5加密存储',
-  `phone` varchar(20) DEFAULT NULL COMMENT '注册手机号',
-  `email` varchar(50) DEFAULT NULL COMMENT '注册邮箱',
-  `sex` varchar(2) DEFAULT '',
-  `address` varchar(255) DEFAULT NULL,
-  `state` int(11) DEFAULT '0',
-  `description` varchar(255) DEFAULT NULL,
-  `role_id` int(11) DEFAULT '0',
-  `file` varchar(255) DEFAULT NULL COMMENT '头像',
-  `created` datetime NOT NULL,
-  `updated` datetime NOT NULL,
+  `status` int(2) DEFAULT NULL COMMENT '1-成功 2-失败',
+  `order_id` varchar(64) DEFAULT NULL COMMENT '订单号',
+  `user_id` bigint(20) DEFAULT NULL COMMENT '退款人id',
+  `user_name` varchar(64) DEFAULT NULL COMMENT '退款人姓名',
+  `trade_no` varchar(64) DEFAULT NULL COMMENT '平台退款流水号',
+  `refund_no` varchar(64) DEFAULT NULL COMMENT '第三方退款流水号',
+  `amount` decimal(10,2) DEFAULT NULL COMMENT '退款金额(元)',
+  `channel` int(2) DEFAULT NULL COMMENT '退款渠道 1-支付宝 2-微信',
+  `gmt_create` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '退款时间',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `username` (`username`) USING BTREE,
-  UNIQUE KEY `phone` (`phone`) USING BTREE,
-  UNIQUE KEY `email` (`email`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COMMENT='用户表';
+  UNIQUE KEY `trade_no_key` (`trade_no`) USING BTREE COMMENT '平台退款流水号'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='退款表';
 
 -- ----------------------------
--- Records of tb_user
+-- Records of tb_refund
 -- ----------------------------
-INSERT INTO `tb_user` VALUES ('1', 'admin', 'e10adc3949ba59abbe56e057f20f883e', '17621230884', '1012139570@qq.com', '男', null, '1', '超级管理员', '1', 'https://gper.club/server-img/avatars/000/00/00/user_origin_30.jpg?time1565591384242', '2017-09-05 21:27:54', '2017-10-18 22:57:08');
-INSERT INTO `tb_user` VALUES ('2', 'test', '098f6bcd4621d373cade4e832627b4f6', '12345678901', '123@qq.com', '女', null, '1', '游客', '0', 'https://gper.club/server-img/avatars/000/00/00/user_origin_30.jpg?time1565591384242', '2017-09-05 21:27:54', '2018-04-18 14:35:19');
-INSERT INTO `tb_user` VALUES ('3', 'mic', '4eea1e5de59fbc61cb3ab480dbbf6a5f', null, null, null, null, '1', null, null, 'https://gper.club/server-img/avatars/000/00/00/user_origin_30.jpg?time1565591384242', '2019-07-23 02:28:28', '2019-07-23 02:28:28');
+-- Table structure for tb_comment
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_comment`;
+CREATE TABLE `tb_comment`  (
+  `id` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '商品评论主键',
+  `order_id` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '订单id',
+  `item_id` bigint(20) NOT NULL COMMENT '商品id',
+  `star` tinyint(4) NULL DEFAULT 5 COMMENT '星级',
+  `type` tinyint(4) NULL DEFAULT 1 COMMENT '类型: 1好评 2中评 3差评',
+  `is_anoymous` bit(1) NULL DEFAULT b'0' COMMENT '是否匿名评价',
+  `content` varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '评价内容',
+  `buyer_nick` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '买家昵称',
+  `comment_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '评价时间',
+  `is_public` bit(1) NULL DEFAULT b'1' COMMENT '是否公开',
+  `is_valid` bit(1) NULL DEFAULT b'0' COMMENT '是否通过审核',
+  `validation_user_id` bigint(20) NULL DEFAULT NULL COMMENT '审核人id',
+  `validation_time` datetime(0) NULL DEFAULT NULL COMMENT '审核时间',
+  `validation_suggestion` varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '审核意见',
+  `is_top` bit(1) NULL DEFAULT b'0' COMMENT '是否置顶',
+  `user_id` bigint(20) NOT NULL COMMENT '评论用户id',
+  `is_deleted` bit(1) NULL DEFAULT b'0' COMMENT '是否删除',
+  `deletion_time` datetime(0) NULL DEFAULT NULL COMMENT '删除时间',
+  `deletion_user_id` bigint(20) NULL DEFAULT NULL COMMENT '删除用户id',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '商品评价表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for tb_comment_picture
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_comment_picture`;
+CREATE TABLE `tb_comment_picture`  (
+  `id` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '商品评价图片id',
+  `comment_id` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '商品评价id',
+  `pic_path` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '图片路径',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '商品评价图片表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for tb_comment_reply
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_comment_reply`;
+CREATE TABLE `tb_comment_reply`  (
+  `id` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '评价回复id',
+  `comment_id` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '商品评价id',
+  `parent_id` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '评价回复自关联id(针对回复的回复)',
+  `content` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '回复意见',
+  `reply_time` datetime(0) NULL DEFAULT NULL COMMENT '回复时间',
+  `reply_nick` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '回复人昵称',
+  `user_id` bigint(20) NOT NULL COMMENT '回复人用户id',
+  `is_deleted` bit(1) NULL DEFAULT b'0' COMMENT '是否删除',
+  `deletion_time` datetime(0) NULL DEFAULT NULL COMMENT '删除时间',
+  `deletion_user_id` bigint(20) NULL DEFAULT NULL COMMENT '删除用户id',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '商品评价回复表' ROW_FORMAT = Dynamic;
+
+
+DROP TABLE IF EXISTS `tb_user_verify`;
+CREATE TABLE `tb_user_verify`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `username` varchar(56) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `register_date` datetime(0) NULL DEFAULT NULL,
+  `uuid` varchar(56) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `is_verify` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否验证Y已验证，N为验证',
+  `is_expire` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否过期Y已过期，N为过期',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+
+alter table
+tb_member add COLUMN isverified varchar(26) DEFAULT 'N';
+
+DROP TABLE IF EXISTS `tb_stock`;
+CREATE TABLE `tb_stock` (
+  `item_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '商品id',
+  `stock_count` bigint(20) NOT NULL DEFAULT '0' COMMENT '库存数量',
+  `lock_count` int(11) NOT NULL DEFAULT '0' COMMENT '冻结库存数量',
+  `restrict_count` int(3) DEFAULT '5' COMMENT '限购数量',
+  `sell_id` int(6) DEFAULT NULL COMMENT '售卖id',
+  PRIMARY KEY (`item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='库存表';

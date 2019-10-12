@@ -25,11 +25,7 @@ public class Order {
      * 订单id
 
      */
-
     @Id
-
-    @Column(name = "order_id")
-
     private String orderId;
 
 
@@ -40,7 +36,7 @@ public class Order {
 
      */
 
-    private Double payment;
+    private BigDecimal payment;
 
 
 
@@ -64,7 +60,7 @@ public class Order {
 
     @Column(name = "post_fee")
 
-    private Double postFee;
+    private BigDecimal postFee;
 
 
 

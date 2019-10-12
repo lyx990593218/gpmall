@@ -29,5 +29,8 @@ public class TotalCommentRequest extends AbstractRequest {
         if (StringUtils.isEmpty(itemId)) {
             throw new ValidateException(CommentRetCode.REQUISITE_PARAMETER_NOT_EXIST.getCode(),CommentRetCode.REQUISITE_PARAMETER_NOT_EXIST.getMessage());
         }
+        if (type != null && (type < 1 || type > 3)) {
+            type = null;
+        }
     }
 }
